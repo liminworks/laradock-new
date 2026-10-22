@@ -32,10 +32,14 @@ USER root
 
 ARG CHANGE_SOURCE=false
 RUN if [ ${CHANGE_SOURCE} = true ]; then \
-    # Change application source from ubuntu.com to tuna.tsinghua.edu.cn source
-    sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list; \
-    sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list; \
-  fi;
+    # Ubuntu 24.04+ (noble) 把源换成了 deb822 格式的 /etc/apt/sources.list.d/ubuntu.sources，旧版才是 /etc/apt/sources.list；两种都处理
+    if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+        sed -i 's@http://archive.ubuntu.com@https://mirrors.aliyun.com@g; s@http://security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list.d/ubuntu.sources; \
+    fi; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i 's@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g; s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list; \
+    fi; \
+fi
 
 ###########################################################################
 # Laradock non-root user:
