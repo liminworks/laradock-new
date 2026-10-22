@@ -25,6 +25,9 @@
 /nacos/data/
 /nacos/standalone-logs/
 
+# .env 迁移前的备份
+/.env.migration-backup
+
 docker-compose.custom.yml
 
 .DS_Store

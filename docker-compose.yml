@@ -214,6 +214,7 @@ include:
     env_file: mysql/defaults.env
   - path: nacos/compose.yml
     project_directory: .
+    env_file: nacos/defaults.env
   - path: n8n/compose.yml
     project_directory: .
     env_file: n8n/defaults.env

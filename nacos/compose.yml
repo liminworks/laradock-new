@@ -7,13 +7,17 @@ services:
       environment:
         - PREFER_HOST_MODE=hostname
         - MODE=standalone
-        - NACOS_AUTH_IDENTITY_KEY=nacos_server_identity_key
-        - NACOS_AUTH_IDENTITY_VALUE=nacos_server_identity_value
-        - NACOS_AUTH_TOKEN=CZ0Yv94JbA4dm3eJhRaEvKlxUnTfOOFimcO1c1KV8Li2AyR4odARP/p7cAHNmbZb
+        # 认证当前关闭（本地试点）；生产启用时改为 true，并需在控制台首次设置 admin 密码、
+        # 给 api/im 客户端配置用户名密码，见 .env 中 NACOS_* 段
+        - NACOS_AUTH_ENABLE=false
+        - NACOS_AUTH_IDENTITY_KEY=${NACOS_AUTH_IDENTITY_KEY}
+        - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
+        - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
       ports:
         # Nacos 2.x 控制台与主服务共用 8848（路径 /nacos）；独立 8080 控制台端口是 3.x 才有
-        - "8848:8848"
-        - "9848:9848"
+        # 仅绑定本机回环，不暴露到局域网；容器间通过 backend 网络互访，不经此映射
+        - "127.0.0.1:${NACOS_HOST_PORT}:8848"
+        - "127.0.0.1:${NACOS_GRPC_HOST_PORT}:9848"
       volumes:
         - ./nacos/standalone-logs/:/home/nacos/logs
         - ./nacos/data/:/home/nacos/data
