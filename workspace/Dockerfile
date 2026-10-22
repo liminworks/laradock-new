@@ -32,12 +32,13 @@ USER root
 
 ARG CHANGE_SOURCE=false
 RUN if [ ${CHANGE_SOURCE} = true ]; then \
-    # Ubuntu 24.04+ (noble) 把源换成了 deb822 格式的 /etc/apt/sources.list.d/ubuntu.sources，旧版才是 /etc/apt/sources.list；两种都处理
+    # Ubuntu 24.04+ (noble) 把源换成了 deb822 格式的 /etc/apt/sources.list.d/ubuntu.sources，旧版才是 /etc/apt/sources.list；两种都处理。
+    # arm64 机器上源主机是 ports.ubuntu.com（ubuntu-ports），amd64 是 archive/security.ubuntu.com，都要覆盖
     if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
-        sed -i 's@http://archive.ubuntu.com@https://mirrors.aliyun.com@g; s@http://security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list.d/ubuntu.sources; \
+        sed -i 's@http://archive.ubuntu.com@http://mirrors.aliyun.com@g; s@http://security.ubuntu.com@http://mirrors.aliyun.com@g; s@http://ports.ubuntu.com/ubuntu-ports@http://mirrors.aliyun.com/ubuntu-ports@g' /etc/apt/sources.list.d/ubuntu.sources; \
     fi; \
     if [ -f /etc/apt/sources.list ]; then \
-        sed -i 's@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g; s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list; \
+        sed -i 's@http://.*archive.ubuntu.com@http://mirrors.aliyun.com@g; s@http://.*security.ubuntu.com@http://mirrors.aliyun.com@g; s@http://ports.ubuntu.com/ubuntu-ports@http://mirrors.aliyun.com/ubuntu-ports@g' /etc/apt/sources.list; \
     fi; \
 fi
 
