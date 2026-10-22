@@ -82,7 +82,9 @@ RUN set -xe; \
       APT_GET_UPDATE_OPTIONS=""; \
     fi; \
     apt-get update -yqq ${APT_GET_UPDATE_OPTIONS} && \
-    pecl channel-update pecl.php.net && \
+    # pecl.php.net 在部分网络环境下元数据请求会持续返回畸形 XML（上游已知 flakiness）；
+    # channel-update 只是刷新元数据，失败时沿用镜像内已有通道信息即可，不应中断整个链路
+    (pecl channel-update pecl.php.net || echo "WARN: pecl channel-update failed, continuing with existing channel") && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; then \
       groupmod --new-name laradock -g ${PGID} ubuntu; \
       usermod --login laradock -u ${PUID} --move-home --home /home/laradock ubuntu; \
