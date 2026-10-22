@@ -21,6 +21,10 @@
 !/.devcontainer/devcontainer.example.json
 !/.devcontainer/docker-compose.extend-example.yml
 
+# Nacos 运行时数据（derby 存储与日志）
+/nacos/data/
+/nacos/standalone-logs/
+
 docker-compose.custom.yml
 
 .DS_Store

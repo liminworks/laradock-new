@@ -11,3 +11,10 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+  - job_name: 'hyperf'
+    # 默认路由是 /metrics
+    static_configs:
+      - targets: ['consumer-9502:9503']
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
