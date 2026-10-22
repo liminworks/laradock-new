@@ -114,8 +114,8 @@ services:
         - FAKETIME=${PHP_FPM_FAKETIME}
         - TZ=${WORKSPACE_TIMEZONE}
 
-      depends_on:
-        - workspace
+      # 本 fork 不使用 workspace 容器（代码由宿主机直接挂载），移除对它的依赖，
+      # 避免 up php-fpm 时连带触发 workspace 镜像构建
       networks:
         - backend
       links:
