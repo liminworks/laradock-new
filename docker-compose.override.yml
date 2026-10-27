@@ -1,0 +1,66 @@
+# 本地自定义服务（docker compose 自动与 docker-compose.yml 合并，laradock 升级零冲突）
+# api/im：hyperf 常驻服务，走 nacos 服务发现；与生产同款 healthcheck + service_healthy 依赖
+# （防"api/im 比 nacos 就绪早启动 → 注册重试 9 秒即放弃 → RPC 全挂"，2026-10-27 生产事故实锤）
+
+services:
+
+  # 给 laradock 的 nacos 补就绪探针（镜像内 curl 在 /usr/bin/curl，实测可用）
+  nacos:
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
+
+  # api：自包含镜像（deploy/README.md 的 k8s 路线，kind 直接 kind load 这个 tag）
+  api:
+    restart: always
+    build:
+      context: /Users/limin/PhpstormProjects/api_internal
+      dockerfile: Dockerfile
+    image: qwr/api:dev
+    container_name: api
+    # 代码烤在镜像里（k8s 同款）；运行期只挂 .env（README 坑3：Hyperf 走 Dotenv 读文件）
+    volumes:
+      - /Users/limin/PhpstormProjects/api_internal/.env:/opt/www/.env:ro
+    ports:
+      - "9501:9501"
+      - "9503:9503"
+      - "9506:9506"
+    # 大视频导入上传时整体转字符串进内存（CoroutineHandler），2G 与生产对齐
+    entrypoint: ["php", "-d", "memory_limit=2048M", "/opt/www/bin/hyperf.php", "start"]
+    healthcheck:
+      # alpine 镜像不一定有 curl，用 php 探 TCP 端口最稳（与 deploy/local 同款）
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9501) ? 0 : 1);"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    # Swoole 收 SIGTERM 后需要时间退出 worker，给足优雅停机时间
+    stop_grace_period: 60s
+    privileged: true
+    networks:
+      - backend
+    depends_on:
+      nacos:
+        condition: service_healthy
+
+  im:
+    restart: always
+    image: hyperf/hyperf:8.1-alpine-v3.18-swoole
+    container_name: im
+    working_dir: /data/im
+    volumes:
+      - /Users/limin/PhpstormProjects/im_internal:/data/im
+    ports:
+      - "9504:9504"
+      - "9505:9505"
+      - "9507:9507"
+    command: /usr/bin/php -d swoole.use_shortname=Off -d memory_limit=1G /data/im/bin/hyperf.php start
+    privileged: true
+    networks:
+      - backend
+    depends_on:
+      nacos:
+        condition: service_healthy
