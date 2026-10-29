@@ -1,17 +1,18 @@
 # 本地自定义服务（docker compose 自动与 docker-compose.yml 合并，laradock 升级零冲突）
-# api/im：hyperf 常驻服务，走 nacos 服务发现；与生产同款 healthcheck + service_healthy 依赖
-# （防"api/im 比 nacos 就绪早启动 → 注册重试 9 秒即放弃 → RPC 全挂"，2026-10-27 生产事故实锤）
+# api/im：hyperf 常驻服务；服务发现已退役 nacos，改 compose 服务名直连
+# （api→im 走 IM_SERVICE_HOST=im；im→api 走 API_SERVICE_HOST=api，见各自 .env）
+# nacos 依赖已注释（2026-10-29 nacos 全面退役；恢复方法见下段注释模板）
 
 services:
 
-  # 给 laradock 的 nacos 补就绪探针（镜像内 curl 在 /usr/bin/curl，实测可用）
-  nacos:
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8848/nacos/v1/console/health/readiness"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 60s
+  # （nacos 已退役。如需恢复：取消下段注释 + 恢复 api/im 的 depends_on + 两项目 .env 开 NACOS_ENABLE）
+  # nacos:
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-sf", "http://localhost:8848/nacos/v1/console/health/readiness"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 30
+  #     start_period: 60s
 
   # api：自包含镜像（deploy/README.md 的 k8s 路线，kind 直接 kind load 这个 tag）
   api:
@@ -42,9 +43,9 @@ services:
     privileged: true
     networks:
       - backend
-    depends_on:
-      nacos:
-        condition: service_healthy
+    # depends_on:                 # nacos 已退役，无依赖
+    #   nacos:
+    #     condition: service_healthy
 
   im:
     restart: always
@@ -61,6 +62,6 @@ services:
     privileged: true
     networks:
       - backend
-    depends_on:
-      nacos:
-        condition: service_healthy
+    # depends_on:                 # nacos 已退役，无依赖
+    #   nacos:
+    #     condition: service_healthy
