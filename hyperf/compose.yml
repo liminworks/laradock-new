@@ -1,0 +1,56 @@
+# hyperf 运行时基础镜像（hyperf/Dockerfile，本地开发：代码运行时挂载，镜像不含代码/vendor）
+# api/im 共用一个镜像 hyperf:dev；build 只挂在 api 上，im 直接复用
+# （Dockerfile 有改动时 docker compose build api 重建一次即可，两服务同时生效）
+# api→im 走 IM_SERVICE_HOST=im；im→api 走 API_SERVICE_HOST=api，见各自项目 .env
+
+services:
+
+    # api：hyperf 常驻服务
+    api:
+      restart: always
+      build:
+        context: ./hyperf
+      image: laradock/hyperf:dev
+      container_name: laradock-hyperf_api
+      volumes:
+        - /Users/limin/PhpstormProjects/api_internal:/opt/www
+      ports:
+        - "9501:9501"
+        - "9503:9503"
+        - "9506:9506"
+      # 大视频导入上传时整体转字符串进内存（CoroutineHandler），2G 与生产对齐
+      entrypoint: ["php", "-d", "memory_limit=2048M", "/opt/www/bin/hyperf.php", "start"]
+      healthcheck:
+        # alpine 镜像不一定有 curl，用 php 探 TCP 端口最稳（与 deploy/local 同款）
+        test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9501) ? 0 : 1);"]
+        interval: 10s
+        timeout: 3s
+        retries: 5
+        start_period: 30s
+      # Swoole 收 SIGTERM 后需要时间退出 worker，给足优雅停机时间
+      stop_grace_period: 60s
+      privileged: true
+      networks:
+        - backend
+
+    im:
+      restart: always
+      image: laradock/hyperf:dev
+      container_name: laradock-hyperf_im
+      volumes:
+        - /Users/limin/PhpstormProjects/im_internal:/opt/www
+      ports:
+        - "9504:9504"
+        - "9505:9505"
+        - "9507:9507"
+      # 镜像无默认入口，两服务都用 entrypoint 显式启动（此处原 override 用 command，已改为 entrypoint）
+      entrypoint: ["/usr/bin/php", "-d", "swoole.use_shortname=Off", "-d", "memory_limit=1G", "/opt/www/bin/hyperf.php", "start"]
+      # Swoole 收 SIGTERM 后需要时间退出 worker，给足优雅停机时间
+      stop_grace_period: 60s
+      privileged: true
+      networks:
+        - backend
+
+# nacos 已退役（2026-10-29，服务发现改 compose 服务名直连）。如需恢复：
+# 给上面两服务加回 depends_on: { nacos: { condition: service_healthy } }，
+# 并在两项目 .env 开 NACOS_ENABLE；nacos 的 healthcheck 模板见 git 历史里的

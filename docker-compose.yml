@@ -121,6 +121,8 @@ include:
   - path: haproxy/compose.yml
     project_directory: .
     env_file: haproxy/defaults.env
+  - path: hyperf/compose.yml
+    project_directory: .
   - path: ide-theia/compose.yml
     project_directory: .
     env_file: ide-theia/defaults.env
