@@ -11,7 +11,7 @@ services:
       build:
         context: ./hyperf
       image: laradock/hyperf:dev
-      container_name: laradock-hyperf_api
+      container_name: laradock-hyperf-api
       volumes:
         - /Users/limin/PhpstormProjects/api_internal:/opt/www
       ports:
@@ -36,7 +36,7 @@ services:
     im:
       restart: always
       image: laradock/hyperf:dev
-      container_name: laradock-hyperf_im
+      container_name: laradock-hyperf-im
       volumes:
         - /Users/limin/PhpstormProjects/im_internal:/opt/www
       ports:
